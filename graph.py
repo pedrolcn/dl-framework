@@ -2,7 +2,6 @@ class Graph(object):
     """
     Implements a representation of a computational graph
     """
-
     def __init__(self):
         self.nodes = {}
         self.arcs = {}
@@ -18,14 +17,24 @@ class Graph(object):
 
     def add_arcs(self, parents):
 
-        if type(parents) is list:
+        if type(parents) is list or type(parents) is tuple:
             for parent_node in parents:
-                self.arcs[str(parent_node)] = self.idx
+                self.arcs[str(parent_node)].append(self.idx)
+
+    def get_parents_by_var(self, inputs):
+        parents = []
+        for parameter in inputs:
+            parents.append(list(self.nodes.keys())[list(self.nodes.values()).index(parameter)])
+
+        return tuple(parents)
 
     def topologically_sort(self):
         raise NotImplementedError
 
-    def execute(self, configs):
+    def forward_prop(self):
+        raise NotImplementedError
+
+    def backward_prop(self):
         raise NotImplementedError
 
 
@@ -35,17 +44,28 @@ class Node(object):
     (if any), and operation
     """
 
-    def __init__(self, graph=None, name='', node_type=None, parents=()):
+    def __init__(self, graph=None, op=None, node_type=None, parents=(), cache=False, name=''):
         self.name = name
+        self.op = op
         self.node_type = node_type
         self.parents = parents
-        self.cached_output = None
+        self.g = graph
+
+        if cache:
+            self.cached_output = []
 
         if graph is not None:
             graph.add_node(self)
+
+    def get_cached_outputs_from_parents(self):
+        cache = []
+        for node in self.parents:
+            cache.append(self.g.nodes[node].cached_output)
+
+        return tuple(cache)
 
     def forward(self):
         raise NotImplementedError
 
     def backward(self):
-        raise NotImplementedError
+        self.op.backward(self)
